@@ -78,6 +78,7 @@ public class GetImageAsyncTask extends AsyncTask<String, Void, Bitmap> {
         if (response == null) {
             return null;
         }
+
         Bitmap bitmap = BitmapFactory.decodeStream(response.byteStream(), null, options);
         response.close();
         return bitmap;
