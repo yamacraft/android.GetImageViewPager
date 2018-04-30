@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">GetImageViewPager</string>
+
+    <string name="action_download">ダウンロード</string>
 </resources>

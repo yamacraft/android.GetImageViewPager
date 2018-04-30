@@ -7,12 +7,16 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okio.BufferedSink;
+import okio.BufferedSource;
+import okio.Okio;
 import timber.log.Timber;
 
 /**
@@ -79,7 +83,40 @@ public class GetImageAsyncTask extends AsyncTask<String, Void, Bitmap> {
             return null;
         }
 
-        Bitmap bitmap = BitmapFactory.decodeStream(response.byteStream(), null, options);
+        // テキストデータなら response.string() でOK
+
+        BufferedSource in;
+        BufferedSink out;
+        in = response.source();
+        out = Okio.buffer(Okio.sink(new ByteArrayOutputStream()));
+        long contentLength = response.contentLength();
+        byte data[] = new byte[1024];
+
+        long total = 0;
+        int count;
+        try {
+            while ((count = in.read(data)) != -1) {
+                total += count;
+                Timber.v("%d / %d", contentLength, total);
+                out.write(data, 0, count);
+                in.inputStream().reset();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] dataSource = out.buffer().readByteArray();
+        Bitmap bitmap = BitmapFactory.decodeByteArray(
+                dataSource, 0, dataSource.length, options);
+        //Bitmap bitmap = BitmapFactory.decodeStream(, null, options);
+        try {
+            in.close();
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         response.close();
         return bitmap;
     }
